@@ -1,6 +1,10 @@
 const express = require("express");
 const customerRouter = require("./routes/customerRoutes");
-const orderRouter = require("./routes/orderRoutes")
+const orderRouter = require("./routes/orderRoutes");
+const dotenv = require("dotenv").config();
+const connectDb = require("./config/dbConnection");
+
+connectDb();
 
 app = express();
 const port = process.env.PORT || 5002;
