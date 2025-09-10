@@ -9,6 +9,7 @@ connectDb();
 app = express();
 const port = process.env.PORT || 5002;
 
+app.use(express.json())
 app.use("/api/customers", customerRouter);
 app.use("/api/orders", orderRouter)
 

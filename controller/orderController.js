@@ -1,17 +1,54 @@
-const getOrder = (req, res)=>{
-    res.send("get page of ORDERSS ")
-}
+const Order = require("../models/orderModel")
+const asyncHandler = require("express-async-handler");
 
-const createOrder = (req, res) => {
-    res.send(`create for order pAGE`)
-}
+//@desc get all order
+//@route GET api/orders
+const getOrders = asyncHandler(async (req, res)=>{
+    const orders = await Order.find();
+    res.status(200).json(orders);
+})
 
-const updateOrder = (req, res) => {
-    res.send(`update for order ${req.params.id}`)
-}
+const getOrder = asyncHandler(async (req, res)=>{
+    const order = await Order.findById(req.params.id);
+    res.status(200).json(order);
+})
 
-const deleteOrder = (req, res) => {
-    res.send(`delete for order ${req.params.id}`)
-}
+const createOrder = asyncHandler(async (req, res) => {
+    const {customerId,orderNumber,totalAmount,items} = req.body;
+    if(!customerId || !orderNumber || !totalAmount || !items){
+        res.status(400);
+        throw new Error("all fields are required");
+    }
+    const order = await Order.create({
+        customerId,
+        orderNumber,
+        totalAmount,
+        items
+    })
+    res.status(201).json(order);
+})
 
-module.exports = {getOrder, updateOrder, deleteOrder, createOrder};
+const updateOrder = asyncHandler(async (req, res) => {
+
+    const order = await Order.findByIdAndUpdate(
+        req.params.id,
+        req.body,
+        {new: true}
+    );
+    if(!order){
+        res.status(404);
+        throw new Error("order not found")
+    }
+    res.status(201).json(order);
+})
+
+const deleteOrder = asyncHandler(async (req, res) => {
+    const order = await Order.findByIdAndDelete(req.params.id);
+    if(!order){
+        res.status(404);
+        throw new Error("order not found")
+    }
+    res.status(201).json({"message": `order id ${req.params.id} has been deleted`})
+})
+
+module.exports = {getOrder,getOrders, updateOrder, deleteOrder, createOrder};
