@@ -1,0 +1,20 @@
+{
+  "name": "crm-backend",
+  "version": "1.0.0",
+  "description": "backend for my crm application",
+  "license": "MIT",
+  "author": "Ronith Dhanesh",
+  "type": "commonjs",
+  "main": "server.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "start": "node server.js",
+    "dev": "nodemon server.js"
+  },
+  "devDependencies": {
+    "nodemon": "^3.1.10"
+  },
+  "dependencies": {
+    "express": "^5.1.0"
+  }
+}
