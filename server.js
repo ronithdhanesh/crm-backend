@@ -1,7 +1,12 @@
 const express = require("express");
+const customerRouter = require("./routes/customerRoutes");
+const orderRouter = require("./routes/orderRoutes")
 
 app = express();
-port = 5002
+const port = process.env.PORT || 5002;
+
+app.use("/api/customers", customerRouter);
+app.use("/api/orders", orderRouter)
 
 app.get("/", (req, res)=>{
     res.send("hii");
@@ -13,4 +18,4 @@ app.listen(port, ()=>{
 
 
 console.log("server running ");
-console.log("helloooww");
+
