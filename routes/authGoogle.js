@@ -1,14 +1,13 @@
-const express = require("express")
-const router = express.Router()
-const passport = require("passport")
-const session = require('express-session');
+const express = require("express");
+const router = express.Router();
+const passport = require("passport");
 
-require("../config/auth")
-
+// The auth configuration is handled in a separate file, so we just need to require it.
+require("../config/auth");
 
 // @desc    Initiates the Google OAuth flow
 // @route   GET /auth/google
-// Passport.authenticate is the middleware that redirects to Google's login page
+// This middleware redirects the user to Google's login page.
 router.get("/", 
     passport.authenticate('google', { 
         scope: ["profile", "https://www.googleapis.com/auth/userinfo.email"] 
@@ -17,10 +16,11 @@ router.get("/",
 
 // @desc    Google OAuth callback URL
 // @route   GET /auth/google/callback
-// This is the endpoint Google redirects to after login
+// This is the endpoint Google redirects to after a successful login.
 router.get("/callback",
     passport.authenticate('google', { failureRedirect: '/auth/google/failure' }),
     (req, res) => {
+        // This final handler runs after the session has been established.
         console.log("Authentication successful, redirecting to dashboard...");
         res.redirect("/dashboard");
     }

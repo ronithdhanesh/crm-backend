@@ -1,26 +1,34 @@
-const GoogleStrategy = require( 'passport-google-oauth2' ).Strategy;
-const passport = require("passport")
-const dotenv = require("dotenv").config()
+const passport = require("passport");
+const { Strategy: GoogleStrategy } = require("passport-google-oauth20");
+const dotenv = require("dotenv").config();
 
-const GOOGLE_CLIENT_ID = process.env.GOOGLE_CLIENT_ID
-const GOOGLE_CLIENT_SECRET = process.env.GOOGLE_CLIENT_SECRET
+const GOOGLE_CLIENT_ID = process.env.GOOGLE_CLIENT_ID;
+const GOOGLE_CLIENT_SECRET = process.env.GOOGLE_CLIENT_SECRET;
 
-
+// Passport.js configuration with the correct strategy
 passport.use(new GoogleStrategy({
     clientID: GOOGLE_CLIENT_ID,
     clientSecret: GOOGLE_CLIENT_SECRET,
-    callbackURL: "http://localhost:5002/auth/google/callback",
-    passReqToCallback   : true
+    callbackURL: "/auth/google/callback"
   },
-  function(request, accessToken, refreshToken, profile, done) {
-    return done(null, profile)
+  (accessToken, refreshToken, profile, done) => {
+    // This function runs on a successful login.
+    // It's retrieving the correct profile data and is ready for database integration.
+    console.log("User logged in:", profile.displayName);
+    return done(null, profile);
   }
 ));
 
-passport.serializeUser(function(user, done) {
-  done(null, user);
+// Session serialization: We only need to store the unique user ID
+// This keeps the session lightweight and efficient.
+passport.serializeUser((user, done) => {
+    done(null, user.id);
 });
 
-passport.deserializeUser(function(user, done) {
-  done(null, user);
+// Session deserialization: Use the stored ID to retrieve the user
+passport.deserializeUser((id, done) => {
+    // For a real app, you would fetch the user from your database using this ID
+    // For now, we'll just mock a user object.
+    const user = { id: id, displayName: "Authenticated User" };
+    done(null, user);
 });

@@ -1,0 +1,202 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Mini CRM - Campaign Builder</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+        }
+    </style>
+</head>
+<body class="bg-gray-100 min-h-screen flex items-center justify-center p-4">
+    <div class="bg-white p-8 rounded-xl shadow-lg w-full max-w-2xl">
+        <h1 class="text-3xl font-bold text-gray-800 mb-6 text-center">Campaign Builder</h1>
+        <form id="campaignForm" class="space-y-6">
+            <div class="flex flex-col space-y-2">
+                <label for="campaignName" class="font-semibold text-gray-700">Campaign Name</label>
+                <input type="text" id="campaignName" placeholder="e.g., Win-back Offer for Inactive Users" class="p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
+            </div>
+
+            <div class="space-y-4">
+                <h2 class="text-xl font-semibold text-gray-700">Audience Rules</h2>
+                <div id="rulesContainer" class="space-y-3">
+                    <!-- Rule builder will be dynamically added here -->
+                </div>
+                <div class="flex space-x-2">
+                    <button type="button" id="addRuleBtn" class="bg-blue-500 text-white px-4 py-2 rounded-lg font-semibold hover:bg-blue-600 transition-colors">Add Rule</button>
+                    <button type="button" id="previewBtn" class="bg-gray-700 text-white px-4 py-2 rounded-lg font-semibold hover:bg-gray-800 transition-colors">Preview Audience</button>
+                </div>
+            </div>
+
+            <div id="previewResult" class="bg-blue-50 p-4 rounded-lg text-blue-800 font-semibold hidden">
+                <p>Audience Size: <span id="audienceSize">0</span> customers</p>
+            </div>
+
+            <div class="flex flex-col space-y-2">
+                <label for="messageTemplate" class="font-semibold text-gray-700">Message Template</label>
+                <textarea id="messageTemplate" rows="4" placeholder="e.g., Hi {{name}}, here's a special offer for your next purchase!" class="p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"></textarea>
+            </div>
+
+            <div class="flex justify-end space-x-4">
+                <button type="button" id="runCampaignBtn" class="bg-green-500 text-white px-6 py-3 rounded-lg font-semibold hover:bg-green-600 transition-colors">Run Campaign</button>
+            </div>
+        </form>
+        
+        <div id="campaignStatus" class="mt-6 p-4 rounded-lg text-center font-semibold hidden"></div>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const rulesContainer = document.getElementById('rulesContainer');
+            const addRuleBtn = document.getElementById('addRuleBtn');
+            const previewBtn = document.getElementById('previewBtn');
+            const runCampaignBtn = document.getElementById('runCampaignBtn');
+            const previewResult = document.getElementById('previewResult');
+            const audienceSizeSpan = document.getElementById('audienceSize');
+            const campaignStatusDiv = document.getElementById('campaignStatus');
+            const campaignForm = document.getElementById('campaignForm');
+
+            const availableFields = [
+                { value: "totalSpend", text: "Total Spend (Number)" },
+                { value: "visits", text: "Visits (Number)" },
+                { value: "lastPurchaseDate", text: "Last Purchase Date (Date)" }
+            ];
+
+            const operators = {
+                'number': [{ value: ">", text: "is greater than" }, { value: "<", text: "is less than" }, { value: "==", text: "is equal to" }],
+                'date': [{ value: "$lt", text: "is before (e.g., 6 months ago)" }]
+            };
+
+            const addRule = (combinator = "$and") => {
+                const ruleId = `rule-${Date.now()}`;
+                const ruleDiv = document.createElement('div');
+                ruleDiv.id = ruleId;
+                ruleDiv.className = 'flex flex-col sm:flex-row space-y-2 sm:space-y-0 sm:space-x-2 items-center';
+
+                ruleDiv.innerHTML = `
+                    <select id="${ruleId}-field" class="flex-1 p-2 border border-gray-300 rounded-lg"></select>
+                    <select id="${ruleId}-operator" class="flex-1 p-2 border border-gray-300 rounded-lg"></select>
+                    <input type="text" id="${ruleId}-value" placeholder="Value" class="flex-1 p-2 border border-gray-300 rounded-lg">
+                    <button type="button" class="removeRuleBtn text-red-500 hover:text-red-700 font-bold ml-2">x</button>
+                `;
+                rulesContainer.appendChild(ruleDiv);
+                
+                const fieldSelect = document.getElementById(`${ruleId}-field`);
+                availableFields.forEach(field => {
+                    const option = document.createElement('option');
+                    option.value = field.value;
+                    option.textContent = field.text;
+                    fieldSelect.appendChild(option);
+                });
+
+                const updateOperators = (field) => {
+                    const operatorSelect = document.getElementById(`${ruleId}-operator`);
+                    operatorSelect.innerHTML = '';
+                    const fieldType = field === 'lastPurchaseDate' ? 'date' : 'number';
+                    operators[fieldType].forEach(op => {
+                        const option = document.createElement('option');
+                        option.value = op.value;
+                        option.textContent = op.text;
+                        operatorSelect.appendChild(option);
+                    });
+                };
+
+                fieldSelect.addEventListener('change', (e) => updateOperators(e.target.value));
+                updateOperators(fieldSelect.value);
+            };
+
+            const getRules = () => {
+                const rules = [];
+                const ruleElements = rulesContainer.querySelectorAll('.flex-col');
+                ruleElements.forEach(ruleElement => {
+                    const field = ruleElement.querySelector('[id$="-field"]').value;
+                    const operator = ruleElement.querySelector('[id$="-operator"]').value;
+                    let value = ruleElement.querySelector('[id$="-value"]').value;
+
+                    // Basic type conversion
+                    if (field === 'totalSpend' || field === 'visits') {
+                        value = parseFloat(value);
+                    }
+
+                    rules.push({ field, operator, value });
+                });
+                return rules;
+            };
+
+            addRuleBtn.addEventListener('click', () => addRule());
+            rulesContainer.addEventListener('click', (e) => {
+                if (e.target.classList.contains('removeRuleBtn')) {
+                    e.target.closest('.flex-col').remove();
+                    previewResult.classList.add('hidden');
+                }
+            });
+
+            previewBtn.addEventListener('click', async () => {
+                const rules = getRules();
+                if (rules.length === 0) {
+                    alert('Please add at least one rule.');
+                    return;
+                }
+                const response = await fetch('/api/campaigns/preview', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ rules, combinator: "$and" })
+                });
+                const result = await response.json();
+                if (response.ok) {
+                    audienceSizeSpan.textContent = result.audienceSize;
+                    previewResult.classList.remove('hidden');
+                } else {
+                    alert('Error previewing audience: ' + result.message);
+                }
+            });
+
+            runCampaignBtn.addEventListener('click', async () => {
+                const campaignName = document.getElementById('campaignName').value;
+                const messageTemplate = document.getElementById('messageTemplate').value;
+                const rules = getRules();
+
+                if (!campaignName || !messageTemplate || rules.length === 0) {
+                    alert('All fields and at least one rule are required.');
+                    return;
+                }
+
+                campaignStatusDiv.textContent = 'Running campaign... This may take a moment.';
+                campaignStatusDiv.className = 'mt-6 p-4 rounded-lg text-center font-semibold bg-yellow-100 text-yellow-800';
+                campaignStatusDiv.classList.remove('hidden');
+
+                const response = await fetch('/api/campaigns', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        name: campaignName,
+                        audience: { rules, combinator: "$and" },
+                        messageTemplate: messageTemplate
+                    })
+                });
+
+                const result = await response.json();
+                if (response.ok) {
+                    campaignStatusDiv.textContent = `Campaign '${result.name}' successfully completed. Messages sent: ${result.deliveryStats.sent}, failed: ${result.deliveryStats.failed}.`;
+                    campaignStatusDiv.className = 'mt-6 p-4 rounded-lg text-center font-semibold bg-green-100 text-green-800';
+                    campaignForm.reset();
+                    rulesContainer.innerHTML = '';
+                    addRule();
+                    previewResult.classList.add('hidden');
+                } else {
+                    campaignStatusDiv.textContent = 'Error running campaign: ' + result.message;
+                    campaignStatusDiv.className = 'mt-6 p-4 rounded-lg text-center font-semibold bg-red-100 text-red-800';
+                }
+            });
+
+            addRule(); // Add the first rule on page load
+        });
+    </script>
+</body>
+</html>

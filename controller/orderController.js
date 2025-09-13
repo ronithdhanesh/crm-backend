@@ -1,54 +1,76 @@
-const Order = require("../models/orderModel")
 const asyncHandler = require("express-async-handler");
+const Customer = require("../models/customerModel");
+const Order = require("../models/orderModel");
 
-//@desc get all order
-//@route GET api/orders
-const getOrders = asyncHandler(async (req, res)=>{
+// @desc    Get all orders
+// @route   GET /api/orders
+const getOrders = asyncHandler(async (req, res) => {
     const orders = await Order.find();
     res.status(200).json(orders);
-})
+});
 
-const getOrder = asyncHandler(async (req, res)=>{
+// @desc    Get a single order
+// @route   GET /api/orders/:id
+const getOrder = asyncHandler(async (req, res) => {
     const order = await Order.findById(req.params.id);
-    res.status(200).json(order);
-})
-
-const createOrder = asyncHandler(async (req, res) => {
-    const {customerId,orderNumber,totalAmount,items} = req.body;
-    if(!customerId || !orderNumber || !totalAmount || !items){
-        res.status(400);
-        throw new Error("all fields are required");
+    if (!order) {
+        res.status(404);
+        throw new Error("Order not found");
     }
-    const order = await Order.create({
+    res.status(200).json(order);
+});
+
+// @desc    Create a new order and update the related customer
+// @route   POST /api/orders
+const createOrder = asyncHandler(async (req, res) => {
+    const { customerId, orderNumber, totalAmount, items } = req.body;
+
+    if (!customerId || !orderNumber || !totalAmount) {
+        res.status(400);
+        throw new Error("All fields are mandatory for an order");
+    }
+
+    // Step 1: Create and save the new order
+    const newOrder = await Order.create({ customerId, orderNumber, totalAmount, items });
+
+    // Step 2: Update the related customer's profile
+    // Use $inc to increment and $set to update the date.
+    await Customer.findByIdAndUpdate(
         customerId,
-        orderNumber,
-        totalAmount,
-        items
-    })
-    res.status(201).json(order);
-})
+        {
+            $inc: { totalSpend: totalAmount, visits: 1 },
+            $set: { lastPurchaseDate: new Date() }
+        },
+        { new: true } // Returns the updated document
+    );
 
+    res.status(201).json(newOrder);
+});
+
+// @desc    Update an order
+// @route   PUT /api/orders/:id
 const updateOrder = asyncHandler(async (req, res) => {
-
     const order = await Order.findByIdAndUpdate(
         req.params.id,
         req.body,
-        {new: true}
+        { new: true }
     );
-    if(!order){
+    if (!order) {
         res.status(404);
-        throw new Error("order not found")
+        throw new Error("Order not found");
     }
-    res.status(201).json(order);
-})
+    res.status(200).json(order);
+});
 
+// @desc    Delete an order
+// @route   DELETE /api/orders/:id
 const deleteOrder = asyncHandler(async (req, res) => {
     const order = await Order.findByIdAndDelete(req.params.id);
-    if(!order){
+    if (!order) {
         res.status(404);
-        throw new Error("order not found")
+        throw new Error("Order not found");
     }
-    res.status(201).json({"message": `order id ${req.params.id} has been deleted`})
-})
+    res.status(200).json({ message: `Order ${req.params.id} removed` });
+});
 
-module.exports = {getOrder,getOrders, updateOrder, deleteOrder, createOrder};
+module.exports = { getOrders, getOrder, createOrder, updateOrder, deleteOrder };
