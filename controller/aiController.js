@@ -13,15 +13,10 @@ const generateRules = asyncHandler(async (req, res) => {
     }
 
     try {
-        // --- This is the key change ---
-        // Make a call to your Python AI microservice running on port 8000
         const pythonServiceUrl = "http://localhost:8000/generate-rules";
         const response = await axios.post(pythonServiceUrl, { text: prompt });
-
-        // The Python service should return a valid JSON ruleset.
         const aiOutput = response.data;
 
-        // Verify the response from the AI
         if (!aiOutput || !aiOutput.rules || !aiOutput.combinator) {
             res.status(500);
             throw new Error("Invalid response format from AI service.");
