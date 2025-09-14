@@ -5,16 +5,16 @@ const axios = require("axios");
 // @route   POST /api/ai/text-to-rules
 // @access  Private
 const generateRules = asyncHandler(async (req, res) => {
-    const { prompt } = req.body;
+    const { text } = req.body;
 
-    if (!prompt) {
+    if (!text) {
         res.status(400);
         throw new Error("Prompt is required.");
     }
 
     try {
         const pythonServiceUrl = "http://localhost:8000/generate-rules";
-        const response = await axios.post(pythonServiceUrl, { text: prompt });
+        const response = await axios.post(pythonServiceUrl, { text: text });
         const aiOutput = response.data;
 
         if (!aiOutput || !aiOutput.rules || !aiOutput.combinator) {

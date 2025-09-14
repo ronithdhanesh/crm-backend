@@ -21,15 +21,16 @@ router.get("/callback",
     passport.authenticate('google', { failureRedirect: '/auth/google/failure' }),
     (req, res) => {
         // This final handler runs after the session has been established.
-        console.log("Authentication successful, redirecting to dashboard...");
-        res.redirect("/dashboard");
+        console.log("Authentication successful, redirecting to frontend...");
+        res.redirect("http://localhost:5173");
     }
 );
 
 // @desc    Google OAuth authentication failed
 // @route   GET /auth/google/failure
 router.get("/failure", (req, res) => {
-    res.send("Authentication failed");
+    console.log("Authentication failed, redirecting to frontend...");
+    res.redirect("http://localhost:5173?error=auth_failed");
 });
 
 module.exports = router;

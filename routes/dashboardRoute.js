@@ -4,7 +4,8 @@ const router = express.Router();
 
 
 router.route("/").get((req, res)=>{
-    res.send("Dashboard page")
+    // Redirect to frontend instead of showing backend page
+    res.redirect("http://localhost:5173");
 });
 
 module.exports = router;

@@ -2,4 +2,6 @@ langchain
 langchain-google-genai
 langchain-core
 langchain-community
-dotenv
+python-dotenv
+fastapi
+uvicorn
